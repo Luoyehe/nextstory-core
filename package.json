@@ -1,0 +1,71 @@
+{
+  "name": "@nextstory/core",
+  "version": "0.1.0",
+  "description": "Explainable single- and multi-origin visual novel discovery, with optional NextMoe catalogue adapters.",
+  "type": "module",
+  "license": "MPL-2.0",
+  "exports": {
+    ".": "./index.js",
+    "./discovery": "./lib/discovery.js",
+    "./creator-identity": "./lib/creator-identity.js",
+    "./exploration-seeds": "./lib/exploration-seeds.js",
+    "./search-match": "./lib/search-match.js",
+    "./search-ranking": "./lib/search-ranking.js",
+    "./node": {
+      "node": "./node.js"
+    },
+    "./node/nextmoe": {
+      "node": "./server/nextmoe.mjs"
+    },
+    "./node/catalog-provider": {
+      "node": "./server/catalog-provider.mjs"
+    },
+    "./node/catalog-search": {
+      "node": "./server/catalog-search.mjs"
+    },
+    "./node/catalog-normalize": {
+      "node": "./server/catalog-normalize.mjs"
+    },
+    "./node/catalog-transport": {
+      "node": "./server/catalog-transport.mjs"
+    },
+    "./node/catalog-cache": {
+      "node": "./server/catalog-cache.mjs"
+    },
+    "./node/catalog-database": {
+      "node": "./server/catalog-database.mjs"
+    },
+    "./node/catalog-sync": {
+      "node": "./server/catalog-sync.mjs"
+    },
+    "./node/catalog-migration": {
+      "node": "./server/catalog-migration.mjs"
+    },
+    "./node/creator-profile": {
+      "node": "./server/creator-profile.mjs"
+    },
+    "./node/work-tags": {
+      "node": "./server/work-tags.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "node.js",
+    "lib/",
+    "server/",
+    "examples/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "example": "node examples/discovery.mjs",
+    "example:nextmoe": "node examples/nextmoe.mjs"
+  },
+  "keywords": [
+    "visual-novel",
+    "galgame",
+    "discovery",
+    "nextmoe"
+  ]
+}

@@ -2,7 +2,48 @@
 
 `@nextstory/core` provides explainable Galgame discovery for applications that want to build their own interface. It ranks explicit relationships between works, creators, voice actors, companies and series, and returns the evidence behind each result.
 
-Version: **0.1.0**. ESM only, with no runtime npm dependencies. The package includes no website interface, account database, credentials, game images or real catalogue fixture data.
+Version: **0.1.1**. ESM only, with no runtime npm dependencies. The package includes no website interface, account database, credentials, game images or real catalogue fixture data.
+
+## Install once, update with one command
+
+Use the versioned GitHub dependency in your **host application's development directory** (Node.js/npm and Git are required):
+
+```sh
+npm install "@nextstory/core@git+https://github.com/Luoyehe/nextstory-core.git#semver:^0.1.1" --ignore-scripts --no-audit --no-fund
+```
+
+Then update just Core within that compatible release series:
+
+```sh
+npm update @nextstory/core --ignore-scripts --no-audit --no-fund
+```
+
+This works directly from public GitHub version tags; no GitHub login, API key or npm-registry publication is required. Do not use `main` or an unversioned Git URL as an automatic update channel. An existing fixed `.tgz`, `file:` path or exact Git tag does **not** track new versions: run the install command above once to change that dependency's source. Do not replace your application's whole `package.json` with the example.
+
+For a ready-to-run embedded host, copy **both files** from [`examples/embedded-host/`](examples/embedded-host/) into a new directory outside this Core checkout. Run `npm install --ignore-scripts --no-audit --no-fund`, then `npm run core:check`. Subsequent updates use one command:
+
+```sh
+npm run core:update
+```
+
+The example updates the dependency and runs an offline check of the public imports, single/multi-origin discovery and the optional in-memory Node adapter. It makes no NextMoe requests and never opens the host's persistent databases. Existing hosts can copy `verify.mjs` to a chosen location and merge the two example script entries, adjusting the verification path. The smoke check complements the host's own integration tests; it does not prove every application behavior.
+
+### Compatibility and application ownership
+
+- `^0.1.1` accepts stable `0.1.x` releases from `0.1.1` onward. It excludes `0.2.0`, `1.0.0` and prereleases. Moving to a new compatibility series is an explicit developer decision.
+- We reserve the `0.1.x` update channel for compatible changes: preserve public API shapes, defaults, ranking semantics and runtime requirements. Incompatible contract changes or irreversible stored-data changes require a new compatibility series and migration instructions. This is a release policy, not a guarantee that software can never have a regression.
+- Core has no runtime npm dependencies or installation hooks. The commands target Core and disable lifecycle scripts. They update package-manager-owned dependency files and the lockfile, not the host's UI, source code, credentials, configuration, accounts or catalogue data. Keep those files outside `node_modules` and never patch installed Core files directly.
+- Commit `package.json` and the generated `package-lock.json` in the host project; ignore `node_modules`. The lockfile records the chosen Git commit. Build/deploy with `npm ci` to reproduce that reviewed version instead of selecting a new version on every application launch.
+- Run updates in development or a staged build. A bundled browser/Electron/desktop application needs rebuilding; a Node service needs its normal restart/reload. This command is **not** a live hot-swap or an end-user application updater. C#, Rust or other hosts can use the example as their separately packaged Node helper.
+- `--ignore-scripts` deliberately skips host install hooks as well. Run your normal, trusted build steps afterwards. Use your existing package manager and workspace targeting rules in a monorepo; do not introduce a second lockfile into a pnpm/Yarn-managed project.
+
+### Failure and rollback
+
+Before updating, preserve the host's current manifest and lockfile (for example, in version control). If installation or verification fails, the command exits unsuccessfully: do not deploy that staging directory. It does **not** promise an atomic install or automatically restore the prior dependency tree.
+
+To roll back, restore the previous `package.json` and `package-lock.json`, then run `npm ci --ignore-scripts --no-audit --no-fund` and the host's checks/build. `npm ci` recreates the entire dependency tree, so do this in the staging/build directory. Restoring code is not a substitute for a data backup if a future explicitly chosen incompatible version has already migrated real data.
+
+This mechanism uses npm's documented [Git semver dependencies](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#git-urls-as-dependencies) and [targeted updates](https://docs.npmjs.com/cli/v11/commands/npm-update/).
 
 ## Choose an entry point
 
@@ -19,7 +60,7 @@ Version: **0.1.0**. ESM only, with no runtime npm dependencies. The package incl
 
 Only the Node entry points require Node.js. The root entry does not import `node:sqlite`, read files, open a database or start a background task. Pure functions use modern JavaScript features including Unicode property escapes, `BigInt`, `Map`, `Set` and `URLSearchParams`.
 
-From a source checkout, `npm pack` creates an installable package. Install that archive in a consuming project, for example `npm install ./nextstory-core-0.1.0.tgz`. Bundlers can resolve the imports above. For an unbundled browser, serve `index.js` and the complete `lib/` directory together and import `index.js` by its served URL.
+From a source checkout, `npm pack` creates an installable package. Install that archive in a consuming project, for example `npm install ./nextstory-core-0.1.1.tgz`. This is a fixed offline snapshot; use the GitHub dependency above when you want versioned updates. Bundlers can resolve the imports above. For an unbundled browser, serve `index.js` and the complete `lib/` directory together and import `index.js` by its served URL.
 
 ## Run the synthetic example
 

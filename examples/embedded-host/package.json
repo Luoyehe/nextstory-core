@@ -1,0 +1,16 @@
+{
+  "name": "nextstory-core-host-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "core:check": "node verify.mjs",
+    "core:update": "npm update @nextstory/core --ignore-scripts --no-audit --no-fund && node verify.mjs"
+  },
+  "dependencies": {
+    "@nextstory/core": "git+https://github.com/Luoyehe/nextstory-core.git#semver:^0.1.1"
+  },
+  "engines": {
+    "node": ">=24.14.0"
+  }
+}

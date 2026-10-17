@@ -2,14 +2,14 @@
 
 `@nextstory/core` provides explainable Galgame discovery for applications that want to build their own interface. It ranks explicit relationships between works, creators, voice actors, companies and series, and returns the evidence behind each result.
 
-Version: **0.1.1**. ESM only, with no runtime npm dependencies. The package includes no website interface, account database, credentials, game images or real catalogue fixture data.
+Version: **0.1.2**. ESM only, with no runtime npm dependencies. The package includes no website interface, account database, credentials, game images or real catalogue fixture data.
 
 ## Install once, update with one command
 
 Use the versioned GitHub dependency in your **host application's development directory** (Node.js/npm and Git are required):
 
 ```sh
-npm install "@nextstory/core@git+https://github.com/Luoyehe/nextstory-core.git#semver:^0.1.1" --ignore-scripts --no-audit --no-fund
+npm install "@nextstory/core@git+https://github.com/Luoyehe/nextstory-core.git#semver:^0.1.2" --ignore-scripts --no-audit --no-fund
 ```
 
 Then update just Core within that compatible release series:
@@ -30,7 +30,7 @@ The example updates the dependency and runs an offline check of the public impor
 
 ### Compatibility and application ownership
 
-- `^0.1.1` accepts stable `0.1.x` releases from `0.1.1` onward. It excludes `0.2.0`, `1.0.0` and prereleases. Moving to a new compatibility series is an explicit developer decision.
+- `^0.1.2` accepts stable `0.1.x` releases from `0.1.2` onward. It excludes `0.2.0`, `1.0.0` and prereleases. Moving to a new compatibility series is an explicit developer decision.
 - We reserve the `0.1.x` update channel for compatible changes: preserve public API shapes, defaults, ranking semantics and runtime requirements. Incompatible contract changes or irreversible stored-data changes require a new compatibility series and migration instructions. This is a release policy, not a guarantee that software can never have a regression.
 - Core has no runtime npm dependencies or installation hooks. The commands target Core and disable lifecycle scripts. They update package-manager-owned dependency files and the lockfile, not the host's UI, source code, credentials, configuration, accounts or catalogue data. Keep those files outside `node_modules` and never patch installed Core files directly.
 - Commit `package.json` and the generated `package-lock.json` in the host project; ignore `node_modules`. The lockfile records the chosen Git commit. Build/deploy with `npm ci` to reproduce that reviewed version instead of selecting a new version on every application launch.
@@ -60,7 +60,7 @@ This mechanism uses npm's documented [Git semver dependencies](https://docs.npmj
 
 Only the Node entry points require Node.js. The root entry does not import `node:sqlite`, read files, open a database or start a background task. Pure functions use modern JavaScript features including Unicode property escapes, `BigInt`, `Map`, `Set` and `URLSearchParams`.
 
-From a source checkout, `npm pack` creates an installable package. Install that archive in a consuming project, for example `npm install ./nextstory-core-0.1.1.tgz`. This is a fixed offline snapshot; use the GitHub dependency above when you want versioned updates. Bundlers can resolve the imports above. For an unbundled browser, serve `index.js` and the complete `lib/` directory together and import `index.js` by its served URL.
+From a source checkout, `npm pack` creates an installable package. Install that archive in a consuming project, for example `npm install ./nextstory-core-0.1.2.tgz`. This is a fixed offline snapshot; use the GitHub dependency above when you want versioned updates. Bundlers can resolve the imports above. For an unbundled browser, serve `index.js` and the complete `lib/` directory together and import `index.js` by its served URL.
 
 ## Run the synthetic example
 
@@ -210,6 +210,30 @@ The individually exported Node module names are `nextmoe`, `catalog-provider`, `
 
 A non-JavaScript host can run a small local Node process and exchange JSON over its chosen local HTTP or standard-input/output protocol. That process owns the provider and optional database; the host owns its UI, game installations, launch behavior, playtime, save backups and account state. This package does not start a bridge server or require the NextStory website to run. The pure JavaScript layer may alternatively be used inside a compatible embedded runtime.
 
-## License and data sources
+## License, copyright and source
 
-This package's source is governed by **MPL-2.0**; the unmodified official license is included in [LICENSE](LICENSE) and available from [Mozilla](https://www.mozilla.org/MPL/2.0/). The examples are synthetic. NextMoe data, media, API terms and service quotas remain governed by their respective sources; the code license does not grant rights to game assets or imply NextMoe endorsement. Consult the [NextMoe developer documentation](https://developer.nextmoe.dev/docs) for the upstream API contract.
+Copyright (c) 2026 Luoyehe. **NextStory Core** (`@nextstory/core`) is maintained in the [official source repository](https://github.com/Luoyehe/nextstory-core). The version tags identify each published source release.
+
+This package's source is governed by **MPL-2.0**; the unmodified official license is included in [LICENSE](LICENSE) and available from [Mozilla](https://www.mozilla.org/MPL/2.0/). No additional use restrictions are imposed by this documentation.
+
+When redistributing covered source, retain its applicable copyright and license notices. When distributing covered software in executable form, make the corresponding MPL-covered source, including your changes to covered files, available and tell recipients how to obtain it, as specified in sections 3.1–3.4 of the license. These brief notes do not replace the license text.
+
+### Optional attribution / 自愿署名
+
+If you would like to acknowledge NextStory Core, you can use one of these examples in your README, an About page, third-party acknowledgements or another suitable location:
+
+```markdown
+本项目使用 [NextStory Core](https://github.com/Luoyehe/nextstory-core)，由 Luoyehe 维护，采用 MPL-2.0 许可。
+```
+
+```markdown
+This project uses [NextStory Core](https://github.com/Luoyehe/nextstory-core), maintained by Luoyehe and licensed under MPL-2.0.
+```
+
+These credits are **voluntary**, not an additional license condition. No particular wording, placement, logo or user-visible credit is required by this guidance. Including a credit does not replace the MPL obligations that apply to your distribution. This guidance adds no advertising, telemetry or extra deployment requirements.
+
+以上署名示例完全自愿，不构成额外许可条件；是否采用、使用什么措辞以及放在哪里，均由接入者自行决定。采用示例不能代替 MPL-2.0 本身适用的许可义务。
+
+### Data sources
+
+The examples are synthetic. NextMoe data, media, API terms and service quotas remain governed by their respective sources; the code license does not grant rights to game assets or imply NextMoe endorsement. Consult the [NextMoe developer documentation](https://developer.nextmoe.dev/docs) for the upstream API contract.

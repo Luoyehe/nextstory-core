@@ -1,6 +1,6 @@
 {
   "name": "@nextstory/core",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Explainable single- and multi-origin visual novel discovery, with optional NextMoe catalogue adapters.",
   "type": "module",
   "license": "MPL-2.0",

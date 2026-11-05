@@ -19,13 +19,15 @@
  */
 
 import { creatorFactsFromPages } from './creator-profile.mjs';
+import { isUsableWalkthrough, isUsableWalkthroughPage } from './catalog-walkthrough.mjs';
 import { createHash } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { hasCatalogName, hasWorkCredits, hasWorkRelationships, hasWorkSeries, isUsableWorkRecord, isUsableNameCreditRecord, isUsableSearchRecord, normalizeSearchHit } from './catalog-normalize.mjs';
 
 const BASE_URL = 'https://api.nextmoe.dev/v2';
 const CACHE_LIMIT = 256;
-const TTL = { search: 60_000, work: 900_000, credits: 900_000, roles: 86_400_000 };
+const TTL = { search: 60_000, work: 900_000, credits: 900_000, roles: 86_400_000,
+  walkthroughList: 300_000, walkthrough: 3_600_000 };
 const digest = value => createHash('sha256').update(value).digest('hex');
 const WORK_BLOCKS = ['titles', 'refs', 'credits', 'releases', 'series', 'platforms', 'companies', 'tags', 'covers', 'characters'];
 const decimalId = value => typeof value === 'string' && /^[0-9]{1,20}$/.test(value);
@@ -202,7 +204,11 @@ function assertPublicCatalogue(data) {
 // enter the cache. Optional include fields and additive upstream fields remain
 // untouched; unsupported media are still classified by the catalog provider.
 function validateResponse(data, expected) {
-  const matches = data?.object === expected.object && (expected.object === 'list'
+  const walkthrough = expected.walkthrough;
+  const matches = walkthrough ? (expected.object === 'list'
+    ? isUsableWalkthroughPage(data, walkthrough)
+    : data?.id === expected.id && isUsableWalkthrough(data, { detail: true }))
+    : data?.object === expected.object && (expected.object === 'list'
     ? Array.isArray(data.items)
     : data.id === expected.id && hasCatalogName(data) &&
       (expected.object !== 'work' || isUsableWorkRecord(data)));
@@ -972,6 +978,21 @@ export class NextMoeClient {
     return this.#request(`/catalog/companies/${catalogId(id)}`, { nsfw: nsfwOption(options.nsfw) }, TTL.work, options.signal, { object: 'company', id });
   }
 
+  // Optional, explicit reads: ordinary search/discovery never fetches guides.
+  // Keep raw graph-local keys and source/version metadata for host rendering.
+  async listWalkthroughs(workId, options = {}) {
+    catalogId(workId);
+    const params = { work_id: workId, ...pageOptions(options), nsfw: nsfwOption(options.nsfw) };
+    if (options.characterId !== undefined) params.character_id = catalogId(options.characterId);
+    return this.#request('/catalog/walkthroughs', params, TTL.walkthroughList, options.signal,
+      { object: 'list', walkthrough: { workId, limit: Number(params.limit), characterId: options.characterId } });
+  }
+
+  async getWalkthrough(id, options = {}) {
+    return this.#request(`/catalog/walkthroughs/${catalogId(id)}`, { nsfw: nsfwOption(options.nsfw) },
+      TTL.walkthrough, options.signal, { object: 'walkthrough', id, walkthrough: {} });
+  }
+
   async listWorks({ companyId, seriesId, ids, limit = 20, cursor, signal, nsfw = false, requireRelationships = false, allowPartialRelationships = false, requireCredits = false, cacheOnly = false } = {}) {
     const lanes = [companyId, seriesId, ids].filter(value => value !== undefined).length;
     if (lanes !== 1) throw invalid('Use exactly one company, series or ID batch filter.');
@@ -1283,6 +1304,10 @@ export class NextMoeClient {
   }
 
   #databaseTtl(path, params) {
+    // The current changes feed does not cover walkthroughs. TTL applies to
+    // these exact response snapshots even when other catalogue facts are warm.
+    if (path === '/catalog/walkthroughs') return TTL.walkthroughList;
+    if (/^\/catalog\/walkthroughs\/\d+$/.test(path)) return TTL.walkthrough;
     if (params.q || path === '/catalog/search') return 5 * 60_000;
     if (/\/(credits|credit-names)$/.test(path) && !params.ids || params.company_id || params.series_id) return 6 * 60 * 60_000;
     return 24 * 60 * 60_000;

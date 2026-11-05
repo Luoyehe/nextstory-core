@@ -42,6 +42,7 @@ const prefixEnd = value => {
   return null;
 };
 const plain = value => value && typeof value === 'object' && !Array.isArray(value) && [Object.prototype, null].includes(Object.getPrototypeOf(value));
+const walkthroughPath = value => /^\/catalog\/walkthroughs(?:\/\d{1,20})?$/.test(value);
 const DEFAULT_MAX_BYTES = 20_000_000_000;
 const MEMORY_MAX_BYTES = 256 * 1024 * 1024;
 const MAX_CAPACITY_BYTES = 64 * 1024 ** 3;
@@ -396,6 +397,26 @@ export class CatalogDatabase {
         info.key, randomUUID(), this.#now(), 0, this.#now(), null);
       this.#db.prepare('DELETE FROM catalog_query_entities WHERE query_key=?').run(info.key);
       this.#db.prepare('DELETE FROM catalog_relationships WHERE query_key=?').run(info.key);
+      if (walkthroughPath(resource)) {
+        // A guide is one versioned graph. Extracting names/characters/releases
+        // would turn guide-local display strings into canonical catalogue facts.
+        // Retain only the exact envelope under the same global soft capacity.
+        // Existing work/character/release notifications can invalidate it, but
+        // this does not pretend the upstream feed covers guide changes itself.
+        const dependency = this.#db.prepare('INSERT OR IGNORE INTO catalog_query_entities VALUES (?,?,?,?)');
+        if (idOf(info.params.work_id)) dependency.run(info.key, info.partition, 'work', info.params.work_id);
+        if (idOf(info.params.character_id)) dependency.run(info.key, info.partition, 'character', info.params.character_id);
+        for (const row of Array.isArray(data.items) ? data.items : [data]) {
+          if (idOf(row.work_id)) dependency.run(info.key, info.partition, 'work', row.work_id);
+          if (idOf(row.release?.id)) dependency.run(info.key, info.partition, 'release', row.release.id);
+          for (const character of Array.isArray(row.characters) ? row.characters : []) {
+            if (idOf(character.character_id)) dependency.run(info.key, info.partition, 'character', character.character_id);
+          }
+        }
+        this.#trim();
+        if (!this.#db.prepare('SELECT 1 FROM catalog_queries WHERE key=?').get(info.key)) throw new Error('Catalogue response exceeds capacity.');
+        this.#db.exec('COMMIT'); return true;
+      }
       const touched = new Set();
       const record = (raw, object, kind = 'nested') => {
         const id = idOf(raw?.id);
@@ -534,6 +555,10 @@ export class CatalogDatabase {
       // payload-heavy pages for every credited name in a batch of works.
       const exact = this.#db.prepare('SELECT data,observed_at,expires_at FROM catalog_queries INDEXED BY catalog_query_lookup WHERE key=?').get(info.key);
       if (exact?.expires_at > this.#now()) {
+        if (walkthroughPath(info.resource)) {
+          if (trackUsage) this.#recordRead(info);
+          return { data: JSON.parse(exact.data), expiresAt: exact.expires_at };
+        }
         const result = this.#refreshEnvelope(info, JSON.parse(exact.data), exact, fields);
         if (result) { if (trackUsage) this.#recordRead(info); return result; }
         // A newly observed but now expired fact cannot resurrect an older one
@@ -943,7 +968,11 @@ export class CatalogDatabase {
           const membershipKeys = [];
           for (const row of page) {
             const info = requestInfo({ scope, path: row.path, params: JSON.parse(row.params) });
-            const membership = info && (info.relation || info.params.q || info.resource === '/catalog/search' || (!info.id && !info.params.ids));
+            // Walkthrough membership is only about the explicitly requested
+            // work/character, already registered as exact dependencies above.
+            // Unrelated catalogue changes do not invalidate every guide list.
+            const membership = info && !walkthroughPath(info.resource) &&
+              (info.relation || info.params.q || info.resource === '/catalog/search' || (!info.id && !info.params.ids));
             const ids = info && !info.id ? changedIds.get(info.object) : null;
             const changed = membership || (ids && (info.params.ids || '').split(',').some(id => row.observed_at < (ids.get(id) ?? -Infinity)));
             if (changed) membershipKeys.push(row.key);

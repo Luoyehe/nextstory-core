@@ -15,7 +15,7 @@ async function discardResponse(response) {
 
 const MINUTE = 60_000;
 const DAY = 86_400_000;
-const PUBLIC_PATH = /^\/v2\/catalog\/(?:search|roles|changes|redirects|(?:works|credit-names|persons|companies|characters|releases|series|tags|traits|engines)(?:\/[0-9]{1,20}(?:\/(?:credits|credit-names|titles|refs|releases|series|platforms|companies|tags|characters|appearances|graph|covers|links|descriptions))?)?)$/;
+const PUBLIC_PATH = /^\/v2\/catalog\/(?:search|roles|changes|redirects|walkthroughs(?:\/[0-9]{1,20})?|(?:works|credit-names|persons|companies|characters|releases|series|tags|traits|engines)(?:\/[0-9]{1,20}(?:\/(?:credits|credit-names|titles|refs|releases|series|platforms|companies|tags|characters|appearances|graph|covers|links|descriptions))?)?)$/;
 const DEFAULTS = { user: [100, 10_000], anonymous: [30, 1_000], application: [60, 50_000] };
 
 function problem(status, code, seconds) {

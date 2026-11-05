@@ -161,6 +161,32 @@ Errors use `NextMoeError` with `code` and, where applicable, `status`, `retryAft
 
 The normalizer retains the compatibility missing-cover marker `/assets/cover-placeholder.svg`. This is **not an upstream image URL or a bundled asset**. Map it to your own placeholder or `null`; the network example demonstrates this. Original catalogue media remains linked, not downloaded or licensed by this package.
 
+### Optional read-only walkthroughs
+
+The same `NextMoeClient` supports structured walkthroughs. Constructing the client or searching/exploring works does not fetch them. Call the list only when the user opens a game's walkthrough area, and fetch a chart only after they choose one:
+
+```js
+// workId and walkthroughId are actual decimal-string IDs from the catalogue.
+const list = await client.listWalkthroughs(workId, {
+  nsfw: false, limit: 20, signal: controller.signal,
+});
+// Follow list.next_cursor explicitly using the cursor option when needed.
+// Optional characterId filters by an actual catalogue character ID.
+const guide = await client.getWalkthrough(walkthroughId, {
+  nsfw: false, signal: controller.signal,
+});
+```
+
+Both methods retain the upstream shape: the list returns `{ object: 'list', items, next_cursor? }`; details return `{ object: 'walkthrough', id, work_id, chart, ... }`. List items have no chart. `limit` is 1–100; the default is 20. IDs are decimal strings, and the visibility default is `nsfw: false`, just like other client methods. The host can wrap these calls in its existing `transport.run(...)` identity context. They reuse the same request queue, quota routing, cancellation and in-flight deduplication as work reads; neither the renderer nor a manager's save service needs a separate NextMoe connection.
+
+- Retained metadata includes `source`, `source_url`, `source_author`, `source_updated_on`, `lang`, `release`, `work_route_hints`, `work_content_limit`, character associations and `updated_at`. Display the source link and author when present. `release` may be null; do not imply that a guide matches every translation or game edition. The `localized` maps distinguish machine translations with `is_machine`.
+- `chart` contains `sections`, `legend`, `entries`, `saves`, `endings` and `segments`. Nodes use `{ node_type, key }`; a segment links its `from_node` and `to_node`, and contains ordered `steps`. Preserve source-order notes and `condition` even when `requires_ending_keys` is empty: that can mean the prerequisite was not resolved. Unknown step types should display as unnumbered text.
+- Graph keys are local to a walkthrough. Steps have no globally stable ID. Keep the walkthrough ID and a chart revision/fingerprint with personal progress; an edited guide may change a key's meaning. User checkmarks, notes, completed endings and associations with real save backups belong in the host's personal database, never in shared catalogue records. A guide's save node does not identify an actual save file.
+- The API has no per-step spoiler ceiling. Keep routes, endings and choice instructions collapsed until the user explicitly reveals them. `nsfw` is an age gate; `work_content_limit` is a separate display classification, not a spoiler flag. If `work_route_hints` is true, let the reader know the game already offers route hints.
+- When a `CatalogDatabase` is supplied, exact validated list/detail snapshots share its existing soft file-capacity and recent-use reclamation policy. Guide-local names and graph data are not merged into canonical work/person/character fields. Fresh lists are reused for five minutes, charts for one hour, including after restart. Expired entries are fetched only on demand; no guide polling or bulk chart prefetch is started. Existing work/character/release changes invalidate dependent guides, but the current upstream changes feed does **not** promise walkthrough updates. These reads use TTL reuse, not conditional ETag requests; a future ETag recheck would save bytes but still consume one request.
+
+This API reads published catalogue guides only. It does not call the upstream draft-generation/editor APIs or infer current game progress from a save. Original walkthrough content is not relicensed by Core. See the official [list contract](https://developer.nextmoe.dev/docs/v2/listCatalogWalkthroughs.md) and [detail contract](https://developer.nextmoe.dev/docs/v2/getCatalogWalkthrough.md).
+
 ### Credential ownership
 
 `CatalogTransport` accepts an optional `apiKey` and injectable `fetchImpl`. For an authorized user, the host can call `transport.run({ userId, getAccessToken }, operation)` with its own token provider. The callback is normally called without arguments. After a rejected token, it may receive `{ forceRefresh: true, rejectedAccessToken }`; return a refreshed token or let the host handle authorization failure. The package supplies no login screen, OAuth application or account persistence. Keep credentials in the host's server or desktop process, never browser-delivered code.
